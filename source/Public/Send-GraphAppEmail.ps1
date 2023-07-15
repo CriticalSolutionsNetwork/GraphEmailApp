@@ -1,34 +1,30 @@
 function Send-GraphAppEmail {
-    <#
-        .SYNOPSIS
-        Sends an email using the Microsoft Graph API.
-        .DESCRIPTION
-        The Send-GraphAppEmail function uses the Microsoft Graph API to send an email to a specified recipient.
-        The function requires the Microsoft Graph API to be set up and requires a pre-created Microsoft Graph API
-        app to send the email. The AppName can be passed in as a parameter and the function will retrieve the
-        associated authentication details from the Credential Manager.
-        .PARAMETER AppName
-        The pre-created Microsoft Graph API app name used to send the email.
-        .PARAMETER To
-        The email address of the recipient.
-        .PARAMETER FromAddress
-        The email address of the sender who is a member of the Security Enabled Group allowed to send email
-        that was configured using the Register-GraphEmailApp.
-        .PARAMETER Subject
-        The subject line of the email.
-        .PARAMETER EmailBody
-        The body text of the email.
-        .PARAMETER AttachmentPath
-        An array of file paths for any attachments to include in the email.
-        .EXAMPLE
-        Send-GraphAppEmail -AppName "GraphEmailApp" -To "recipient@example.com" -FromAddress "sender@example.com" -Subject "Test Email" -EmailBody "This is a test email."
-        .NOTES
-        The function requires the Microsoft.Graph and MSAL.PS modules to be installed and imported.
-        .LINK
-        https://github.com/CriticalSolutionsNetwork/ADAuditTasks/wiki/Send-GraphAppEmail
-        .LINK
-        https://criticalsolutionsnetwork.github.io/ADAuditTasks/#Send-GraphAppEmail
-    #>
+<#
+    .SYNOPSIS
+    Sends an email using the Microsoft Graph API.
+    .DESCRIPTION
+    The Send-GraphAppEmail function uses the Microsoft Graph API to send an email to a specified recipient.
+    The function requires the Microsoft Graph API to be set up and requires a pre-created Microsoft Graph API
+    app to send the email. The AppName can be passed in as a parameter and the function will retrieve the
+    associated authentication details from the Credential Manager.
+    .PARAMETER AppName
+    The pre-created Microsoft Graph API app name used to send the email.
+    .PARAMETER To
+    The email address of the recipient.
+    .PARAMETER FromAddress
+    The email address of the sender who is a member of the Security Enabled Group allowed to send email
+    that was configured using the Register-GraphEmailApp.
+    .PARAMETER Subject
+    The subject line of the email.
+    .PARAMETER EmailBody
+    The body text of the email.
+    .PARAMETER AttachmentPath
+    An array of file paths for any attachments to include in the email.
+    .EXAMPLE
+    Send-GraphAppEmail -AppName "GraphEmailApp" -To "recipient@example.com" -FromAddress "sender@example.com" -Subject "Test Email" -EmailBody "This is a test email."
+    .NOTES
+    The function requires the Microsoft.Graph and MSAL.PS modules to be installed and imported.
+#>
     [CmdletBinding()]
     param (
         [Parameter(HelpMessage = "The Pre-created Register-GraphEmailApp Name for sending the email.")]
@@ -116,7 +112,7 @@ function Send-GraphAppEmail {
         if (!($cert)) {
             throw "Certificate with thumbprint $CertThumbprint not found in CurrentUser's certificate store"
         } # End Region If
-        Write-Output "The certificate thumbprint is $CertThumbprint"
+        Write-AuditLog -Message "Retrieved Certificate with thumbprint $CertThumbprint."
     } # End Region Begin
     Process {
         # Authenticate with Azure AD and obtain an access token for the Microsoft Graph API using the certificate
@@ -150,17 +146,22 @@ function Send-GraphAppEmail {
             }
         }
         if ($AttachmentPath) {
-            $attachmentName = (Split-Path -Path $AttachmentPath -Leaf)
-            $attachmentBytes = [System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes($AttachmentPath))
-            $attachment = @{
-                "@odata.type"  = "#microsoft.graph.fileAttachment"
-                "Name"         = $attachmentName
-                "ContentBytes" = $attachmentBytes
+            Write-AuditLog -Message "Attachments found. Processing..."
+            $Message.message.attachments = @()
+            foreach ($Path in $AttachmentPath) {
+                $attachmentName = (Split-Path -Path $Path -Leaf)
+                $attachmentBytes = [System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes($Path))
+                $attachment = @{
+                    "@odata.type"  = "#microsoft.graph.fileAttachment"
+                    "Name"         = $attachmentName
+                    "ContentBytes" = $attachmentBytes
+                }
+                $Message.message.attachments += $attachment
             }
-            $Message.message.attachments = $attachment
         }
         $jsonMessage = $message | ConvertTo-Json -Depth 4
         $body = $jsonMessage
+        Write-AuditLog -Message "Processed message body. Ready to send email."
     }
     End {
         try {

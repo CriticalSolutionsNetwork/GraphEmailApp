@@ -1,43 +1,28 @@
-    <#
+<#
     .SYNOPSIS
-    Creates a new Microsoft Graph Email app and associated certificate for app-only authentication.
+        Deploys a new Microsoft Graph Email app and associates it with a certificate for app-only authentication.
     .DESCRIPTION
-    This cmdlet creates a new Microsoft Graph Email app and associated certificate for app-only authentication.
-    It requires a 2 to 4 character long prefix ID for the app, files and certs that are created, as well as the
-    email address of the sender and the email of the Group the sender is a part of to assign app policy restrictions.
-    .PARAMETER Prefix
-    The 2 to 4 character long prefix ID of the app, files and certs that are created. Meant to group multiple runs
-    so that if run in different environments, they will stack naturally in Azure. Ensure you use the same prefix each
-    time if you'd like this behavior.
-    .PARAMETER UserId
-    The email address of the sender.
-    .PARAMETER MailEnabledSendingGroup
-    The email of the Group the sender is a member of to assign app policy restrictions.
-    For Example: IT-AuditEmailGroup@contoso.com
-    You can create the group using the admin center at https://admin.microsoft.com or you can create it
-    using the following commands as an example.
-        # Import the ExchangeOnlineManagement module
-        Import-Module ExchangeOnlineManagement
-
-        # Create a new mail-enabled security group
-        New-DistributionGroup -Name "My Group" -Members "user1@contoso.com", "user2@contoso.com" -MemberDepartRestriction Closed
+        This cmdlet deploys a new Microsoft Graph Email app and associates it with a certificate for app-only authentication.
+        It requires an AppPrefix for the app, an optional CertThumbprint, an AuthorizedSenderUserName, and a MailEnabledSendingGroup.
+    .PARAMETER AppPrefix
+        A unique prefix for the Graph Email App to initialize. Ensure it is used consistently for grouping purposes.
     .PARAMETER CertThumbprint
-    The thumbprint of the certificate to use. If not specified, a self-signed certificate will be generated.
+        An optional parameter indicating the thumbprint of the certificate to be retrieved. If not specified, a self-signed certificate will be generated.
+    .PARAMETER AuthorizedSenderUserName
+        The username of the authorized sender.
+    .PARAMETER MailEnabledSendingGroup
+        The mail-enabled group to which the sender belongs. This will be used to assign app policy restrictions.
     .EXAMPLE
-    PS C:\> New-GraphEmailApp -Prefix ABC -UserId jdoe@example.com -MailEnabledSendingGroup "GraphAPIMailGroup@example.com" -CertThumbprint "9B8B40C5F148B710AD5C0E5CC8D0B71B5A30DB0C"
+        PS C:\> Deploy-GraphEmailApp -AppPrefix "ABC" -AuthorizedSenderUserName "jdoe@example.com" -MailEnabledSendingGroup "GraphAPIMailGroup@example.com" -CertThumbprint "AABBCCDDEEFF11223344556677889900"
     .INPUTS
-    None
+        None
     .OUTPUTS
-    Returns a pscustomobject containing the AppId, CertThumbprint, TenantID, and CertExpires.
+        Returns a pscustomobject containing the AppId, CertThumbprint, TenantID, and CertExpires.
     .NOTES
-    This cmdlet requires that the user running the cmdlet have the necessary permissions
-    to create the app and connect to Exchange Online. In addition, a mail-enabled security
-    group must already exist in Exchange Online for the MailEnabledSendingGroup parameter.
-    .LINK
-    https://github.com/CriticalSolutionsNetwork/ADAuditTasks/wiki/New-GraphEmailApp
-    .LINK
-    https://criticalsolutionsnetwork.github.io/ADAuditTasks/#New-GraphEmailApp
-    #>
+        This cmdlet requires that the user running the cmdlet have the necessary permissions
+        to create the app and connect to Exchange Online. In addition, a mail-enabled security
+        group must already exist in Exchange Online for the MailEnabledSendingGroup parameter.
+#>
 function Deploy-GraphEmailApp {
     [CmdletBinding()]
     param(
