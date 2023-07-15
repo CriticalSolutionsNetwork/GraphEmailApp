@@ -1,3 +1,25 @@
+<#
+    .SYNOPSIS
+        Retrieves or creates a new certificate for the Microsoft Graph Email app.
+    .DESCRIPTION
+        The Get-GraphEmailAppCert function retrieves a certificate for the specified app from the CurrentUser's certificate store based on the provided thumbprint. 
+        If a thumbprint is not provided, it will generate a new self-signed certificate.
+    .PARAMETER CertThumbprint
+        The thumbprint of the certificate to be retrieved. If not specified, a self-signed certificate will be generated.
+    .PARAMETER AppName
+        The name of the Graph Email App.
+    .EXAMPLE
+        PS C:\> Get-GraphEmailAppCert -AppName "MyApp" -CertThumbprint "9B8B40C5F148B710AD5C0E5CC8D0B71B5A30DB0C"
+    .EXAMPLE
+        PS C:\> Get-GraphEmailAppCert -AppName "MyApp"
+    .INPUTS
+        None
+    .OUTPUTS
+        A custom PowerShell object containing the certificate's thumbprint, expiration date, and the associated app's name.
+    .NOTES
+        The cmdlet requires that the user running the cmdlet have the necessary permissions to create or retrieve certificates from the certificate store.
+        The certificate's expiration date is formatted as "yyyy-MM-dd HH:mm:ss".
+#>
 function Get-GraphEmailAppCert {
     param (
         [string]$CertThumbprint,
