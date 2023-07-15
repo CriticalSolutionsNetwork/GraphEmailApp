@@ -13,7 +13,7 @@ function Initialize-GraphEmailApp {
     )
 
     process {
-        # Begin Logging
+        # Begin Logging Check
         if (!($script:LogString)) {
             Write-AuditLog -Start
         }
