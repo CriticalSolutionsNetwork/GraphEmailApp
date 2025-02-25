@@ -26,20 +26,15 @@
 function Deploy-GraphEmailApp {
     [CmdletBinding()]
     param(
-
         [Parameter(Mandatory = $true, HelpMessage = "The prefix used to initialize the Graph Email App.")]
         [string]$AppPrefix,
-
         [Parameter(Mandatory = $false, HelpMessage = "The thumbprint of the certificate to be retrieved.")]
         [string]$CertThumbprint,
-
         [Parameter(Mandatory = $true, HelpMessage = "The username of the authorized sender.")]
         [string]$AuthorizedSenderUserName,
-
         [Parameter(Mandatory = $true, HelpMessage = "The Mail Enabled Sending Group.")]
         [string]$MailEnabledSendingGroup
     )
-
     $PublicMods = `
         "Microsoft.Graph", "ExchangeOnlineManagement", `
         "Microsoft.PowerShell.SecretManagement", "SecretManagement.JustinGrote.CredMan"
@@ -67,16 +62,11 @@ function Deploy-GraphEmailApp {
     Initialize-ModuleEnv @params1
     Connect-ToMGGraph
     $AppSettings = Initialize-GraphEmailApp -Prefix "$AppPrefix" -UserId "$AuthorizedSenderUserName"
-
     $CertDetails = Get-GraphEmailAppCert -AppName $AppSettings.AppName -CertThumbprint $CertThumbprint
-
     $appRegistration = Register-GraphApp -AppName $AppSettings.AppName -GraphResourceId $AppSettings.graphResourceId -ResID $AppSettings.ResId -CertThumbprint $CertDetails.CertThumbprint
-
-
     Get-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
     Read-Host "Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue."
     # Call to New-ExchangeEmailAppPolicy
-
     [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
     $output = Get-AppSecret -AppName $AppSettings.AppName  -AppRegistration $appRegistration -CertThumbprint $CertDetails.CertThumbprint -Context $AppSettings.Context -User $AppSettings.User -MailEnabledSendingGroup $MailEnabledSendingGroup
     return $output
