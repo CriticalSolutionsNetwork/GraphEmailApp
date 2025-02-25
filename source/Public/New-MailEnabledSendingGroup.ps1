@@ -1,13 +1,13 @@
 function New-MailEnabledSendingGroup {
     [CmdletBinding(DefaultParameterSetName = 'CustomDomain')]
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true, HelpMessage = "Specifies the name of the mail enabled sending group.")]
         [string]$Name,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, HelpMessage = "Optional alias for the group. If not provided, the group name will be used.")]
         [string]$Alias,
-        [Parameter(Mandatory = $true, ParameterSetName = 'CustomDomain')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'CustomDomain', HelpMessage = "Specifies the primary SMTP address for the group when using a custom domain.")]
         [string]$PrimarySmtpAddress,
-        [Parameter(Mandatory = $true, ParameterSetName = 'DefaultDomain')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'DefaultDomain', HelpMessage = "Specifies the default domain to construct the primary SMTP address (alias@DefaultDomain) for the group.")]
         [string]$DefaultDomain
     )
     # Begin Logging
@@ -18,7 +18,7 @@ function New-MailEnabledSendingGroup {
         Write-AuditLog -BeginFunction
     }
     try {
-        if (!($Alias)) {
+        if (-not $Alias) {
             $Alias = $Name
         }
         if ($PSCmdlet.ParameterSetName -eq 'DefaultDomain') {

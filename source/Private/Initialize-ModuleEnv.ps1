@@ -1,4 +1,3 @@
-function Initialize-ModuleEnv {
     <#
         .SYNOPSIS
         Initializes the environment by installing required PowerShell modules.
@@ -49,6 +48,8 @@ function Initialize-ModuleEnv {
         Author: DrIOSx
         This function makes extensive use of the Write-AuditLog function for logging actions, warnings, and errors. It also uses a script-scope variable $script:VerbosePreference for controlling verbose output.
     #>
+function Initialize-ModuleEnv {
+
         [CmdletBinding(DefaultParameterSetName = "Public")]
         param (
             [Parameter(ParameterSetName = "Public", Mandatory)]
@@ -238,4 +239,4 @@ function Initialize-ModuleEnv {
                 }
             }
         }
-    }
+}
