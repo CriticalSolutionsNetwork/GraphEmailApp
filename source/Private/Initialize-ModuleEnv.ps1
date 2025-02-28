@@ -48,7 +48,7 @@
         Author: DrIOSx
         This function makes extensive use of the Write-AuditLog function for logging actions, warnings, and errors. It also uses a script-scope variable $script:VerbosePreference for controlling verbose output.
     #>
-function Initialize-ModuleEnv {
+    function Initialize-ModuleEnv {
 
         [CmdletBinding(DefaultParameterSetName = "Public")]
         param (
@@ -60,13 +60,11 @@ function Initialize-ModuleEnv {
             [string[]]$PrereleaseModuleNames,
             [Parameter(ParameterSetName = "Prerelease", Mandatory)]
             [string[]]$PrereleaseRequiredVersions,
-            [ValidateSet(
-                "AllUsers",
-                "CurrentUser"
-            )]
+            [ValidateSet("AllUsers", "CurrentUser")]
             [string]$Scope,
             [string[]]$ImportModuleNames = $null
         )
+
         # Start logging function execution
         if (!($script:LogString)) {
             Write-AuditLog -Start
@@ -74,7 +72,8 @@ function Initialize-ModuleEnv {
         else {
             Write-AuditLog -BeginFunction
         }
-        # Function limit needs to be set higher if installing graph module and if powershell is version 5.1.
+
+        # Function limit needs to be set higher if installing graph module and if PowerShell is version 5.1.
         # The Microsoft.Graph module requires an increased function limit.
         # If we're installing this module, set the function limit to 8192.
         if ($PublicModuleNames -match 'Microsoft.Graph' -or $PrereleaseModuleNames -match "Microsoft.Graph") {
@@ -82,6 +81,7 @@ function Initialize-ModuleEnv {
                 $script:MaximumFunctionCount = 8192
             }
         }
+
         # Check and install PowerShellGet.
         # PowerShellGet is required for module management in PowerShell.
         ### https://learn.microsoft.com/en-us/powershell/scripting/gallery/installing-psget?view=powershell-7.3
@@ -110,15 +110,15 @@ function Initialize-ModuleEnv {
         else {
             switch (Test-IsAdmin) {
                 $false {
-                    Write-AuditLog "PowerShellGet is version 1.0.0.1. Please run this once as an administrator, to update PowershellGet." -Severity Error
+                    Write-AuditLog "PowerShellGet is version 1.0.0.1. Please run this once as an administrator, to update PowerShellGet." -Severity Error
                     throw "Elevation required to update PowerShellGet!"
                 }
                 Default {
-                    Write-AuditLog "You have sufficient privileges to install to the PowershellGet"
+                    Write-AuditLog "You have sufficient privileges to install to the PowerShellGet"
                 }
             }
             try {
-                Write-AuditLog "Install the latest version of PowershellGet from the PSGallery?" -Severity Warning
+                Write-AuditLog "Install the latest version of PowerShellGet from the PSGallery?" -Severity Warning
                 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
                 Install-Module PowerShellGet -AllowClobber -Force -ErrorAction Stop
                 Write-AuditLog "PowerShellGet was installed successfully!"
@@ -130,7 +130,8 @@ function Initialize-ModuleEnv {
                 throw $_.Exception
             }
         }
-        # End Region PowershellGet Install
+        # End Region PowerShellGet Install
+
         if ($Scope -eq "AllUsers") {
             switch (Test-IsAdmin) {
                 $false {
@@ -143,6 +144,7 @@ function Initialize-ModuleEnv {
                 }
             }
         }
+
         if ($PSCmdlet.ParameterSetName -eq "Public") {
             $modules = $PublicModuleNames
             $versions = $PublicRequiredVersions
@@ -152,48 +154,57 @@ function Initialize-ModuleEnv {
             $versions = $PrereleaseRequiredVersions
             $prerelease = $true
         }
+        else {
+            $prerelease = $false
+        }
+
         foreach ($module in $modules) {
             $name = $module
-            $version = $versions[$modules.IndexOf($module)]
-            $installedModule = Get-Module -Name $name -ListAvailable
+            $requiredVersion = $versions[$modules.IndexOf($module)]
+
+            # Filter installed modules for one with a version equal or higher than required.
+            $installedModule = Get-Module -Name $name -ListAvailable |
+                               Where-Object { [version]$_.Version -ge [version]$requiredVersion } |
+                               Sort-Object Version -Descending |
+                               Select-Object -First 1
+
             switch (($null -eq $ImportModuleNames)) {
                 $false {
                     $SelectiveImports = $ImportModuleNames | Where-Object { $_ -match $name }
-                    Write-AuditLog "Attempting to selecively install module/s:"
+                    Write-AuditLog "Attempting to selectively install module/s:"
                 }
                 Default {
                     $SelectiveImports = $null
                     Write-AuditLog "Selective imports were not specified. All functions and commands will be imported."
                 }
             }
-            # Get Module Object
+            # Set messages based on whether this is a prerelease module or not.
             switch ($prerelease) {
                 $true {
-                    $message = "The PreRelease module $name version $version is not installed. Would you like to install it?"
-                    $throwmsg = "You must install the PreRelease module $name version $version to continue"
+                    $message = "The PreRelease module $name version $requiredVersion (or higher) is not installed. Would you like to install it?"
+                    $throwmsg = "You must install the PreRelease module $name version $requiredVersion (or higher) to continue."
                 }
                 Default {
-                    $message = "The $name module version $version is not installed. Would you like to install it?"
-                    $throwmsg = "You must install the $name module version $version to continue."
+                    $message = "The $name module version $requiredVersion (or higher) is not installed. Would you like to install it?"
+                    $throwmsg = "You must install the $name module version $requiredVersion (or higher) to continue."
                 }
             }
-            if (!$installedModule) {
+            if (-not $installedModule) {
                 # Install Required Module
                 Write-AuditLog $message -Severity Warning
                 try {
-                    Write-AuditLog "Installing $name module/s version $version -AllowPrerelease:$prerelease."
+                    Write-AuditLog "Installing $name module/s version $requiredVersion -AllowPrerelease:$prerelease."
                     $SaveVerbosePreference = $script:VerbosePreference
-                    Install-Module $name -Scope $Scope -RequiredVersion $version -AllowPrerelease:$prerelease -ErrorAction Stop -Verbose:$false
+                    Install-Module $name -Scope $Scope -RequiredVersion $requiredVersion -AllowPrerelease:$prerelease -ErrorAction Stop -Verbose:$false
                     $script:VerbosePreference = $SaveVerbosePreference
                     Write-AuditLog "$name module successfully installed!"
                     if ($SelectiveImports) {
                         foreach ($Mod in $SelectiveImports) {
-                            $name = $Mod
-                            Write-AuditLog "Selectively importing the $name module."
+                            Write-AuditLog "Selectively importing the $Mod module."
                             $SaveVerbosePreference = $script:VerbosePreference
-                            Import-Module $name -ErrorAction Stop -Verbose:$false
+                            Import-Module $Mod -ErrorAction Stop -Verbose:$false
                             $script:VerbosePreference = $SaveVerbosePreference
-                            Write-AuditLog "Successfully imported the $name module."
+                            Write-AuditLog "Successfully imported the $Mod module."
                         }
                     }
                     else {
@@ -213,24 +224,23 @@ function Initialize-ModuleEnv {
                 try {
                     if ($SelectiveImports) {
                         foreach ($Mod in $SelectiveImports) {
-                            $name = $Mod
-                            Write-AuditLog "The $name module was found to be installed."
-                            Write-AuditLog "Selectively importing the $name module."
+                            Write-AuditLog "The $Mod module was found installed with version $($installedModule.Version)."
+                            Write-AuditLog "Selectively importing the $Mod module."
                             $SaveVerbosePreference = $script:VerbosePreference
-                            Import-Module $name -ErrorAction Stop -Verbose:$false
+                            Import-Module $Mod -ErrorAction Stop -Verbose:$false
                             $script:VerbosePreference = $SaveVerbosePreference
-                            Write-AuditLog "Successfully imported the $name module."
+                            Write-AuditLog "Successfully imported the $Mod module."
                             Write-AuditLog -EndFunction
                         }
                     }
                     else {
-                        Write-AuditLog "The $name module was found to be installed."
+                        Write-AuditLog "The $name module was found installed with version $($installedModule.Version)."
                         Write-AuditLog "Importing the $name module."
                         $SaveVerbosePreference = $script:VerbosePreference
                         Import-Module $name -ErrorAction Stop -Verbose:$false
                         $script:VerbosePreference = $SaveVerbosePreference
                         Write-AuditLog "Successfully imported the $name module."
-                        write-auditlog -EndFunction
+                        Write-AuditLog -EndFunction
                     }
                 }
                 catch {
@@ -239,4 +249,4 @@ function Initialize-ModuleEnv {
                 }
             }
         }
-}
+    }
