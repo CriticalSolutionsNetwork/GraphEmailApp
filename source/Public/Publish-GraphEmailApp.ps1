@@ -13,7 +13,7 @@
     .PARAMETER MailEnabledSendingGroup
         The mail-enabled group to which the sender belongs. This will be used to assign app policy restrictions.
     .EXAMPLE
-        PS C:\> Deploy-GraphEmailApp -AppPrefix "ABC" -AuthorizedSenderUserName "jdoe@example.com" -MailEnabledSendingGroup "GraphAPIMailGroup@example.com" -CertThumbprint "AABBCCDDEEFF11223344556677889900"
+        PS C:\> Publish-GraphEmailApp -AppPrefix "ABC" -AuthorizedSenderUserName "jdoe@example.com" -MailEnabledSendingGroup "GraphAPIMailGroup@example.com" -CertThumbprint "AABBCCDDEEFF11223344556677889900"
     .INPUTS
         None
     .OUTPUTS
@@ -23,7 +23,7 @@
         to create the app and connect to Exchange Online. In addition, a mail-enabled security
         group must already exist in Exchange Online for the MailEnabledSendingGroup parameter.
 #>
-function Deploy-GraphEmailApp {
+function Publish-GraphEmailApp {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true, HelpMessage = "The prefix used to initialize the Graph Email App.")]

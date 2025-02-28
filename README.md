@@ -7,7 +7,7 @@ Connects to Microsoft Graph and Exchange Online.
 - **User Interaction**: Requires key press prompts.
 - **Outputs**: Connection established, no direct output.
 
-## Deploy-GraphEmailApp
+## Publish-GraphEmailApp
 Deploys Microsoft Graph Email app with app-only authentication.
 - **Parameters**: AppPrefix, CertThumbprint (optional), AuthorizedSenderUserName, MailEnabledSendingGroup.
 - **Permissions**: Administrator-level for app and Exchange Online access.

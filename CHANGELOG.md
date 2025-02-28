@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add support for newer versions of each module.
+
+### Fixed
+
+- Fixed approved verb for main public function.
+
+## [0.1.0] - 2023-07-15
+
+### Added
+
 - Add support for multiple attachments
 - Release to public.
+
 ## [0.1.0-preview0001] - 2023-07-15
 
 ### Added
