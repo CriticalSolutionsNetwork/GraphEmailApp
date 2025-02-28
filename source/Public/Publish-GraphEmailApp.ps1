@@ -26,7 +26,8 @@
 function Publish-GraphEmailApp {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, HelpMessage = "The prefix used to initialize the Graph Email App.")]
+        [Parameter(Mandatory = $true, HelpMessage = "The prefix used to initialize the Graph Email App. 2-4 characters letters and numbers only.")]
+        [ValidatePattern("^[A-Z0-9]{2,4}$")]
         [string]$AppPrefix,
         [Parameter(Mandatory = $false, HelpMessage = "The thumbprint of the certificate to be retrieved.")]
         [string]$CertThumbprint,
