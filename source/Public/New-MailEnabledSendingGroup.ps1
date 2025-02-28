@@ -18,6 +18,7 @@ function New-MailEnabledSendingGroup {
         Write-AuditLog -BeginFunction
     }
     try {
+        Connect-ExchangeOnline
         if (-not $Alias) {
             $Alias = $Name
         }
