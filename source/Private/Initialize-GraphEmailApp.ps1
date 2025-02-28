@@ -3,7 +3,7 @@ function Initialize-GraphEmailApp {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, HelpMessage = "The 2 to 4 character long prefix ID of the app, files and certs that are created.")]
-        [ValidatePattern('^[A-Z]{2,4}$')]
+        [ValidatePattern("^[A-Z0-9]{2,4}$")]
         [string]$Prefix,
 
         [Parameter(Mandatory = $true, HelpMessage = "The email address of the sender.")]
