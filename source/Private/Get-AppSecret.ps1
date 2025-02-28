@@ -1,23 +1,26 @@
 function Get-AppSecret {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true, HelpMessage = "The application name.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The application name.')]
         [string]$AppName,
 
-        [Parameter(Mandatory = $true, HelpMessage = "The app registration object.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The app registration object.')]
         [PSObject]$AppRegistration,
 
-        [Parameter(Mandatory = $true, HelpMessage = "The certificate thumbprint.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The certificate thumbprint.')]
         [string]$CertThumbprint,
 
-        [Parameter(Mandatory = $true, HelpMessage = "The context object.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The context object.')]
         [PSObject]$Context,
 
-        [Parameter(Mandatory = $true, HelpMessage = "The user object.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The user object.')]
         [PSObject]$User,
 
-        [Parameter(Mandatory = $true, HelpMessage = "The mail enabled sending group.")]
-        [string]$MailEnabledSendingGroup
+        [Parameter(Mandatory = $true, HelpMessage = 'The mail enabled sending group.')]
+        [string]$MailEnabledSendingGroup,
+
+        [Parameter(Mandatory = $true, HelpMessage = 'The Default Domain')]
+        [string]$DefaultDomain
     )
 
     # Begin Logging
@@ -30,9 +33,9 @@ function Get-AppSecret {
     $Cert = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $CertThumbprint }
     if (!(Get-SecretVault -Name GraphEmailAppLocalStore)) {
         try {
-            Write-AuditLog -Message "Registering CredMan Secret Vault"
-            Register-SecretVault -Name GraphEmailAppLocalStore -ModuleName "SecretManagement.JustinGrote.CredMan" -ErrorAction Stop
-            Write-AuditLog -Message "Secret Vault: GraphEmailAppLocalStore registered."
+            Write-AuditLog -Message 'Registering CredMan Secret Vault'
+            Register-SecretVault -Name GraphEmailAppLocalStore -ModuleName 'SecretManagement.JustinGrote.CredMan' -ErrorAction Stop
+            Write-AuditLog -Message 'Secret Vault: GraphEmailAppLocalStore registered.'
         }
         catch {
             throw $_.Exception
@@ -53,10 +56,11 @@ function Get-AppSecret {
         AppId                  = $AppRegistration.AppId
         CertThumbprint         = $CertThumbprint
         TenantID               = $Context.TenantId
-        CertExpires            = ($Cert.NotAfter).ToString("yyyy-MM-dd HH:mm:ss")
-        SendAsUser             = $($User.UserPrincipalName.Split("@")[0])
+        CertExpires            = ($Cert.NotAfter).ToString('yyyy-MM-dd HH:mm:ss')
+        SendAsUser             = $($User.UserPrincipalName.Split('@')[0])
         AppRestrictedSendGroup = $MailEnabledSendingGroup
-        Appname               = "CN=$AppName"
+        Appname                = "CN=$AppName"
+        DefaultDomain          = $DefaultDomain
     }
 
     $delimiter = '|'
@@ -71,7 +75,7 @@ function Get-AppSecret {
 
     Write-AuditLog -Message "Returning output. Save the AppName $("CN=$AppName"). The AppName will be needed to retreive the secret containing authentication info."
 
-    Write-Host "You can use the following values as input into the email function!" -ForegroundColor Green
+    Write-Host 'You can use the following values as input into the email function!' -ForegroundColor Green
     Write-AuditLog -EndFunction
     $output | ForEach-Object {
         $hashTable = @{}
@@ -88,7 +92,7 @@ function Get-AppSecret {
             }
             $splatScript += "    $_ = $value`n"
         }
-        $splatScript += "}"
+        $splatScript += '}'
 
         Write-Output $splatScript
     }

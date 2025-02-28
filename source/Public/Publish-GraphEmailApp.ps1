@@ -69,6 +69,8 @@ function Publish-GraphEmailApp {
     Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
     # Call to New-ExchangeEmailAppPolicy
     [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
-    $output = Get-AppSecret -AppName $AppSettings.AppName -AppRegistration $appRegistration -CertThumbprint $CertDetails.CertThumbprint -Context $AppSettings.Context -User $AppSettings.User -MailEnabledSendingGroup $MailEnabledSendingGroup
+    $output = Get-AppSecret -AppName $AppSettings.AppName -AppRegistration $appRegistration `
+    -CertThumbprint $CertDetails.CertThumbprint -Context $AppSettings.Context -User $AppSettings.User `
+    -MailEnabledSendingGroup $MailEnabledSendingGroup -DefaultDomain $MailEnabledSendingGroup.Split('@')[1]
     return $output
 }
