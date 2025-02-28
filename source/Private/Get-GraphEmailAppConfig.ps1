@@ -49,14 +49,14 @@ function Get-GraphEmailAppConfig {
 
             # Create the admin consent url:
             $adminConsentUrl = "https://login.microsoftonline.com/" + $Context.TenantId + "/adminconsent?client_id=" + $AppRegistration.AppId
-            Write-Output "Please go to the following URL in your browser to provide admin consent"
+            Write-Information "Please go to the following URL in your browser to provide admin consent" -InformationAction Continue
             Write-Output $adminConsentUrl
             Write-Output "After providing admin consent, you can use the following values with Connect-MgGraph for app-only authentication:"
 
             # Generate graph command that can be used to connect later that can be copied and saved.
             $connectGraph = "Connect-MgGraph -ClientId """ + $AppRegistration.AppId + """ -TenantId """`
                 + $Context.TenantId + """ -CertificateName """ + $Cert.SubjectName.Name + """"
-                Write-Output $connectGraph
+                Write-Information $connectGraph -InformationAction Continue
         }
         catch {
             throw $_.Exception
