@@ -1,4 +1,4 @@
-function Get-GraphEmailAppConfig {
+function Set-GraphEmailAppConfig {
     [CmdletBinding()]
     param (
         [Parameter(

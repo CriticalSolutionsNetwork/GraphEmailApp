@@ -66,7 +66,7 @@ function Publish-GraphEmailApp {
         $AppSettings = Initialize-GraphEmailApp -Prefix "$AppPrefix" -UserId "$AuthorizedSenderUserName"
         $CertDetails = Get-GraphEmailAppCert -AppName $AppSettings.AppName -CertThumbprint $CertThumbprint
         $appRegistration = Register-GraphApp -AppName $AppSettings.AppName -GraphResourceId $AppSettings.graphResourceId -ResID $AppSettings.ResId -CertThumbprint $CertDetails.CertThumbprint
-        Get-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
+        Set-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
         Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
         # Call to New-ExchangeEmailAppPolicy
         [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
