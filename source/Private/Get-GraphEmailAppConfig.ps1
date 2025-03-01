@@ -27,6 +27,7 @@ function Get-GraphEmailAppConfig {
         else {
             Write-AuditLog -BeginFunction
         }
+        # TODO Find out if I can change the scope where cert is located and how that affects who and what can access it.
         $Cert = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $CertThumbprint }
         Write-AuditLog '###############################################'
         Write-AuditLog "Creating service principal for app with AppId $($AppRegistration.AppId)"
@@ -34,7 +35,7 @@ function Get-GraphEmailAppConfig {
     process {
         try {
             # Create a Service Principal for the app.
-            New-MgServicePrincipal -AppId $AppRegistration.AppId -AdditionalProperties @{}
+            [void](New-MgServicePrincipal -AppId $AppRegistration.AppId -AdditionalProperties @{})
             # Get the client Service Principal for the created app.
             $ClientSp = Get-MgServicePrincipal -Filter "appId eq '$($AppRegistration.AppId)'"
             if (!($ClientSp)) {
@@ -48,16 +49,17 @@ function Get-GraphEmailAppConfig {
                 'ResourceId'  = $GraphServicePrincipalId
                 'Scope'       = 'Mail.Send'
             }
-            New-MgOauth2PermissionGrant -BodyParameter $Params -Confirm:$false
+            Write-AuditLog "Creating OAuth2 Permission Grant for $($ClientSp.DisplayName)"
+            [void](New-MgOauth2PermissionGrant -BodyParameter $Params -Confirm:$false)
             # Create the admin consent url:
             $adminConsentUrl = 'https://login.microsoftonline.com/' + $Context.TenantId + '/adminconsent?client_id=' + $AppRegistration.AppId
             Write-Verbose 'Please go to the following URL in your browser to provide admin consent' -Verbose
             Write-Host $adminConsentUrl -ForegroundColor DarkGray
-            Write-Verbose 'After providing admin consent, you can use the following values with Connect-MgGraph for app-only authentication:'
+            Write-Verbose 'After providing admin consent, you can use the following values with Connect-MgGraph for app-only authentication:' -Verbose
             # Generate graph command that can be used to connect later that can be copied and saved.
             $connectGraph = 'Connect-MgGraph -ClientId "' + $AppRegistration.AppId + '" -TenantId "'`
                 + $Context.TenantId + '" -CertificateName "' + $Cert.SubjectName.Name + '"'
-            Write-Host $connectGraph -ForegroundColor DarkGray
+            Write-Host $connectGraph -ForegroundColor DarkMagenta
         }
         catch {
             $line = $_.InvocationInfo.Line

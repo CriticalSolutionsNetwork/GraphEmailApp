@@ -83,6 +83,7 @@ function Connect-ToMsService {
                     $useExisting = Read-Host "Do you want to use the existing Exchange Online session? (Y/N)"
                     if ($useExisting -match '^[Yy]') { Write-AuditLog "Using existing Exchange Online session." }
                     else {
+                        Disconnect-ExchangeOnline -Confirm:$false
                         Write-AuditLog "Creating new Exchange Online session."
                         Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop
                         Write-AuditLog "Connected to Exchange Online."
@@ -90,7 +91,7 @@ function Connect-ToMsService {
                 }
                 else {
                     Write-AuditLog "No existing Exchange Online session found. Connecting..."
-                    Connect-ExchangeOnline -ErrorAction Stop
+                    Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop
                     Write-AuditLog "Connected to Exchange Online."
                 }
             }
