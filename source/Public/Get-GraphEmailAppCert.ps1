@@ -2,7 +2,7 @@
     .SYNOPSIS
         Retrieves or creates a new certificate for the Microsoft Graph Email app.
     .DESCRIPTION
-        The Get-GraphEmailAppCert function retrieves a certificate for the specified app from the CurrentUser's certificate store based on the provided thumbprint. 
+        The Get-GraphEmailAppCert function retrieves a certificate for the specified app from the CurrentUser's certificate store based on the provided thumbprint.
         If a thumbprint is not provided, it will generate a new self-signed certificate.
     .PARAMETER CertThumbprint
         The thumbprint of the certificate to be retrieved. If not specified, a self-signed certificate will be generated.
@@ -31,18 +31,18 @@ function Get-GraphEmailAppCert {
     else {
         Write-AuditLog -BeginFunction
     }
-    Write-AuditLog "###############################################"
+    Write-AuditLog '###############################################'
     # Step 10:
     # Create or retrieve certificate from the store.
     try {
         if (!$CertThumbprint) {
             # Create a self-signed certificate for the app.
-            $Cert = New-SelfSignedCertificate -Subject "CN=$AppName" -CertStoreLocation "Cert:\CurrentUser\My" -KeyExportPolicy Exportable -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256
+            $Cert = New-SelfSignedCertificate -Subject "CN=$AppName" -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable -KeySpec Signature -KeyLength 2048 -KeyAlgorithm RSA -HashAlgorithm SHA256
             $CertThumbprint = $Cert.Thumbprint
             $CertExpirationDate = $Cert.NotAfter
             $output = [PSCustomObject] @{
                 CertThumbprint = $CertThumbprint
-                CertExpires    = $certExpirationDate.ToString("yyyy-MM-dd HH:mm:ss")
+                CertExpires    = $certExpirationDate.ToString('yyyy-MM-dd HH:mm:ss')
                 AppName        = $AppName
             }
         }
@@ -56,7 +56,7 @@ function Get-GraphEmailAppCert {
             $CertExpirationDate = $Cert.NotAfter
             $output = [PSCustomObject] @{
                 CertThumbprint = $CertThumbprint
-                CertExpires    = $certExpirationDate.ToString("yyyy-MM-dd HH:mm:ss")
+                CertExpires    = $certExpirationDate.ToString('yyyy-MM-dd HH:mm:ss')
                 AppName        = $AppName
             }
         }
@@ -64,9 +64,11 @@ function Get-GraphEmailAppCert {
     }
     catch {
         # If there is an error, throw an exception with the error message.
-        throw $_.Exception
+        $line = $_.InvocationInfo.Line
+        $lineNum = $_.InvocationInfo.ScriptLineNumber
+        throw [System.Management.Automation.RuntimeException]::new("Error in $($MyInvocation.MyCommand.Name) at line $lineNum`:`n'$line' - $($_.Exception.Message)", $_.Exception)
     }
-    write-auditlog "Certificate with thumbprint $CertThumbprint created or retrieved from the CurrentUser's certificate store."
+    write-AuditLog "Certificate with thumbprint $CertThumbprint created or retrieved from the CurrentUser's certificate store."
     Write-AuditLog -EndFunction
 }
 

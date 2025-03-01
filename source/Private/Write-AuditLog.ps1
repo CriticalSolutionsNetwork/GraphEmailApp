@@ -1,5 +1,4 @@
-﻿function Write-AuditLog {
-    <#
+﻿<#
     .SYNOPSIS
         Writes log messages to the console and updates the script-wide log variable.
     .DESCRIPTION
@@ -49,12 +48,13 @@
 
         Sets the message to "End [FunctionName] log.", where FunctionName is the name of the calling function, and adds it to the log variable.
     .EXAMPLE
-        Write-AuditLog -End -OutputPath "C:\Logs\auditlog.csv"
+        Write-AuditLog -End -OutputPath "C:\Logs\auditLog.csv"
 
         Sets the message to "End Log", adds it to the log variable, and exports the log to a CSV file.
     .NOTES
     Author: DrIOSx
 #>
+function Write-AuditLog {
     [CmdletBinding(DefaultParameterSetName = 'Default')]
     param(
         ###
@@ -109,13 +109,13 @@
         [string]$OutputPath
     )
     begin {
-        $ErrorActionPreference = "SilentlyContinue"
+        $ErrorActionPreference = 'SilentlyContinue'
         # Define variables to hold information about the command that was invoked.
         $ModuleName = $Script:MyInvocation.MyCommand.Name -replace '\..*'
         $FuncName = (Get-PSCallStack)[1].Command
         $ModuleVer = $MyInvocation.MyCommand.Version.ToString()
         # Set the error action preference to continue.
-        $ErrorActionPreference = "Continue"
+        $ErrorActionPreference = 'Continue'
     }
     process {
         try {
@@ -169,21 +169,20 @@
             switch ($Severity) {
                 'Warning' {
                     Write-Warning ('[WARNING] ! ' + $Message)
-                    $UserInput = Read-Host "Warning encountered! Do you want to continue? (Y/N)"
+                    $UserInput = Read-Host 'Warning encountered! Do you want to continue? (Y/N)'
                     if ($UserInput -eq 'N') {
-                        Write-Output "Script execution stopped by user!"
+                        Write-Output 'Script execution stopped by user!'
                         exit
                     }
                 }
-                'Error'       { Write-Error ('[ERROR] X - ' + $FuncName + ' ' + $Message) -ErrorAction Continue }
-                'Verbose'     { Write-Verbose ('[VERBOSE] ~ ' + $Message) }
-                Default { Write-Information ('[INFORMATION] * ' + $Message)  -InformationAction Continue}
+                'Error' { Write-Error ('[ERROR] X - ' + $FuncName + ' ' + $Message) -ErrorAction Continue }
+                'Verbose' { Write-Verbose ('[VERBOSE] ~ ' + $Message) }
+                Default { Write-Information ('[INFORMATION] * ' + $Message) -InformationAction Continue }
             }
         }
         catch {
             throw "Write-AuditLog encountered an error (process block): $($_.Exception.Message)"
         }
-
     }
     end {
         try {
@@ -193,7 +192,7 @@
                     Write-Verbose "LogPath: $(Split-Path -Path $OutputPath -Parent)"
                 }
                 else {
-                    throw "OutputPath is not specified for End action."
+                    throw 'OutputPath is not specified for End action.'
                 }
             }
         }

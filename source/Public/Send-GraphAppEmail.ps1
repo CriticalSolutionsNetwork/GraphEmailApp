@@ -1,55 +1,50 @@
-function Send-GraphAppEmail {
 <#
     .SYNOPSIS
-    Sends an email using the Microsoft Graph API.
+        Sends an email using the Microsoft Graph API.
     .DESCRIPTION
-    The Send-GraphAppEmail function uses the Microsoft Graph API to send an email to a specified recipient.
-    The function requires the Microsoft Graph API to be set up and requires a pre-created Microsoft Graph API
-    app to send the email. The AppName can be passed in as a parameter and the function will retrieve the
-    associated authentication details from the Credential Manager.
+        The Send-GraphAppEmail function uses the Microsoft Graph API to send an email to a specified recipient.
+        The function requires the Microsoft Graph API to be set up and requires a pre-created Microsoft Graph API
+        app to send the email. The AppName can be passed in as a parameter and the function will retrieve the
+        associated authentication details from the Credential Manager.
     .PARAMETER AppName
-    The pre-created Microsoft Graph API app name used to send the email.
+        The pre-created Microsoft Graph API app name used to send the email.
     .PARAMETER To
-    The email address of the recipient.
+        The email address of the recipient.
     .PARAMETER FromAddress
-    The email address of the sender who is a member of the Security Enabled Group allowed to send email
-    that was configured using the Register-GraphEmailApp.
+        The email address of the sender who is a member of the Security Enabled Group allowed to send email
+        that was configured using the Register-GraphEmailApp.
     .PARAMETER Subject
-    The subject line of the email.
+        The subject line of the email.
     .PARAMETER EmailBody
-    The body text of the email.
+        The body text of the email.
     .PARAMETER AttachmentPath
-    An array of file paths for any attachments to include in the email.
+        An array of file paths for any attachments to include in the email.
     .EXAMPLE
-    Send-GraphAppEmail -AppName "GraphEmailApp" -To "recipient@example.com" -FromAddress "sender@example.com" -Subject "Test Email" -EmailBody "This is a test email."
+        Send-GraphAppEmail -AppName "GraphEmailApp" -To "recipient@example.com" -FromAddress "sender@example.com" -Subject "Test Email" -EmailBody "This is a test email."
     .NOTES
-    The function requires the Microsoft.Graph and MSAL.PS modules to be installed and imported.
+        The function requires the Microsoft.Graph and MSAL.PS modules to be installed and imported.
 #>
+function Send-GraphAppEmail {
     [CmdletBinding()]
     param (
-        [Parameter(HelpMessage = "The Pre-created Register-GraphEmailApp Name for sending the email.")]
+        [Parameter(HelpMessage = 'The Pre-created Register-GraphEmailApp Name for sending the email.')]
         [ValidateNotNullOrEmpty()]
         [string]$AppName,
-
-        [Parameter(Mandatory = $true, HelpMessage = "The email address of the recipient.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The email address of the recipient.')]
         [ValidateNotNullOrEmpty()]
-        [ValidatePattern("^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")]
+        [ValidatePattern('^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')]
         [string]$To,
-
-        [Parameter(Mandatory = $true, HelpMessage = "The email address of the sender.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The email address of the sender.')]
         [ValidateNotNullOrEmpty()]
-        [ValidatePattern("^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")]
+        [ValidatePattern('^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')]
         [string]$FromAddress,
-
-        [Parameter(Mandatory = $true, HelpMessage = "The subject line of the email.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The subject line of the email.')]
         [ValidateNotNullOrEmpty()]
         [string]$Subject,
-
-        [Parameter(Mandatory = $true, HelpMessage = "The body text of the email.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'The body text of the email.')]
         [ValidateNotNullOrEmpty()]
         [string]$EmailBody,
-
-        [Parameter(Mandatory = $false, HelpMessage = "An array of file paths for any attachments to include in the email.")]
+        [Parameter(Mandatory = $false, HelpMessage = 'An array of file paths for any attachments to include in the email.')]
         [ValidateNotNullOrEmpty()]
         [ValidateScript({ Test-Path $_ -PathType 'Leaf' })]
         [string[]]$AttachmentPath
@@ -61,17 +56,17 @@ function Send-GraphAppEmail {
         else {
             Write-AuditLog -BeginFunction
         }
-        Write-AuditLog "Begin Log"
-        Write-AuditLog "###############################################"
+        Write-AuditLog 'Begin Log'
+        Write-AuditLog '###############################################'
         # Install and import the Microsoft.Graph module. Tested: 1.22.0
         $PublicMods = `
-            "Microsoft.PowerShell.SecretManagement", "SecretManagement.JustinGrote.CredMan", "MSAL.PS"
+            'Microsoft.PowerShell.SecretManagement', 'SecretManagement.JustinGrote.CredMan', 'MSAL.PS'
         $PublicVers = `
-            "1.1.2", "1.0.0", "4.37.0.0"
+            '1.1.2', '1.0.0', '4.37.0.0'
         $params1 = @{
             PublicModuleNames      = $PublicMods
             PublicRequiredVersions = $PublicVers
-            Scope                  = "CurrentUser"
+            Scope                  = 'CurrentUser'
         }
         Initialize-ModuleEnv @params1
         # If a GraphEmailApp object was not passed in, attempt to retrieve it from the local machine
@@ -80,28 +75,30 @@ function Send-GraphAppEmail {
                 # Step 7:
                 # Define the application Name and Encrypted File Paths.
                 $Auth = Get-Secret -Name "$AppName" -Vault GraphEmailAppLocalStore -AsPlainText -ErrorAction Stop
-                $delimiter = "|"
+                $delimiter = '|'
                 $values = $Auth.Split($delimiter)
-                # Create a new PSCustomObject using the values
-                $authobj = [PSCustomObject] @{
+                # Create a new PSCustomObject using the values in the alphabetized order.
+                $authObj = [PSCustomObject]@{
                     AppId                  = $values[0]
-                    CertThumbprint         = $values[1]
-                    TenantID               = $values[2]
+                    AppName                = $values[1]
+                    AppRestrictedSendGroup = $values[2]
                     CertExpires            = $values[3]
-                    SendAsUser             = $values[4]
-                    AppRestrictedSendGroup = $values[5]
-                    AppName                = $values[6]
+                    CertThumbprint         = $values[4]
+                    DefaultDomain          = $values[5]
+                    SendAsUser             = $values[6]
+                    SendAsUserEmail        = $values[7]
+                    TenantID               = $values[8]
                 }
-                $GraphEmailApp = $authobj
+                $GraphEmailApp = $authObj
             }
             catch {
                 Write-Error $_.Exception.Message
             }
         } # End Region If
         if (!$GraphEmailApp) {
-            throw "GraphEmailApp object not found. Please specify the GraphEmailApp object or provide the AppName and RedirectUri parameters."
+            throw 'GraphEmailApp object not found. Please specify the GraphEmailApp object or provide the AppName and RedirectUri parameters.'
         } # End Region If
-        # Instatiate the required variables for retreiving the token.
+        # Instantiate the required variables for retrieving the token.
         $AppId = $GraphEmailApp.AppId
         $CertThumbprint = $GraphEmailApp.CertThumbprint
         $Tenant = $GraphEmailApp.TenantID
@@ -118,7 +115,7 @@ function Send-GraphAppEmail {
         # Authenticate with Azure AD and obtain an access token for the Microsoft Graph API using the certificate
         $MSToken = Get-MsalToken -ClientCertificate $Cert -ClientId $AppId -Authority "https://login.microsoftonline.com/$Tenant/oauth2/v2.0/token" -ErrorAction Stop
         # Set up the request headers
-        $authheader = @{Authorization = "Bearer $($MSToken.AccessToken)" }
+        $authHeader = @{Authorization = "Bearer $($MSToken.AccessToken)" }
         # Set up the request URL
         $url = "https://graph.microsoft.com/v1.0/users/$($FromAddress)/sendMail"
         # Build the message body
@@ -132,7 +129,7 @@ function Send-GraphAppEmail {
             message = @{
                 subject      = "$Subject"
                 body         = @{
-                    contentType = "text"
+                    contentType = 'text'
                     content     = "$EmailBody"
                 }
                 toRecipients = @(
@@ -146,33 +143,35 @@ function Send-GraphAppEmail {
             }
         }
         if ($AttachmentPath) {
-            Write-AuditLog -Message "Attachments found. Processing..."
+            Write-AuditLog -Message 'Attachments found. Processing...'
             $Message.message.attachments = @()
             foreach ($Path in $AttachmentPath) {
                 $attachmentName = (Split-Path -Path $Path -Leaf)
                 $attachmentBytes = [System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes($Path))
                 $attachment = @{
-                    "@odata.type"  = "#microsoft.graph.fileAttachment"
-                    "Name"         = $attachmentName
-                    "ContentBytes" = $attachmentBytes
+                    '@odata.type'  = '#microsoft.graph.fileAttachment'
+                    'Name'         = $attachmentName
+                    'ContentBytes' = $attachmentBytes
                 }
                 $Message.message.attachments += $attachment
             }
         }
         $jsonMessage = $message | ConvertTo-Json -Depth 4
         $body = $jsonMessage
-        Write-AuditLog -Message "Processed message body. Ready to send email."
+        Write-AuditLog -Message 'Processed message body. Ready to send email.'
     }
     End {
         try {
             # Send the email message using the Invoke-RestMethod cmdlet
-            Write-AuditLog "Sending email via Microsoft Graph."
+            Write-AuditLog 'Sending email via Microsoft Graph.'
             Invoke-RestMethod -Headers $authHeader -Uri $url -Body $body -Method POST -ContentType 'application/json'
             Write-AuditLog "Message sent to $To from $FromAddress with $(($Message.message.attachments).Count) attachments."
             Write-AuditLog -EndFunction
         }
         catch {
-            throw $_.Exception
+            $line = $_.InvocationInfo.Line
+            $lineNum = $_.InvocationInfo.ScriptLineNumber
+            throw [System.Management.Automation.RuntimeException]::new("Error in $($MyInvocation.MyCommand.Name) at line $lineNum`:`n'$line' - $($_.Exception.Message)", $_.Exception)
         }
     } # End Region End
 }

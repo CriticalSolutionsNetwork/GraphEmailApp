@@ -59,18 +59,26 @@ function Publish-GraphEmailApp {
     else {
         Write-AuditLog -BeginFunction
     }
-    Write-AuditLog '###############################################'
-    Initialize-ModuleEnv @params1
-    Connect-ToMGGraph
-    $AppSettings = Initialize-GraphEmailApp -Prefix "$AppPrefix" -UserId "$AuthorizedSenderUserName"
-    $CertDetails = Get-GraphEmailAppCert -AppName $AppSettings.AppName -CertThumbprint $CertThumbprint
-    $appRegistration = Register-GraphApp -AppName $AppSettings.AppName -GraphResourceId $AppSettings.graphResourceId -ResID $AppSettings.ResId -CertThumbprint $CertDetails.CertThumbprint
-    Get-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
-    Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
-    # Call to New-ExchangeEmailAppPolicy
-    [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
-    $output = Get-AppSecret -AppName $AppSettings.AppName -AppRegistration $appRegistration `
-    -CertThumbprint $CertDetails.CertThumbprint -Context $AppSettings.Context -User $AppSettings.User `
-    -MailEnabledSendingGroup $MailEnabledSendingGroup -DefaultDomain $MailEnabledSendingGroup.Split('@')[1]
-    return $output
+    try {
+        Write-AuditLog '###############################################'
+        Initialize-ModuleEnv @params1
+        Connect-ToMsService -MgGraph -ExchangeOnline
+        $AppSettings = Initialize-GraphEmailApp -Prefix "$AppPrefix" -UserId "$AuthorizedSenderUserName"
+        $CertDetails = Get-GraphEmailAppCert -AppName $AppSettings.AppName -CertThumbprint $CertThumbprint
+        $appRegistration = Register-GraphApp -AppName $AppSettings.AppName -GraphResourceId $AppSettings.graphResourceId -ResID $AppSettings.ResId -CertThumbprint $CertDetails.CertThumbprint
+        Get-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
+        Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
+        # Call to New-ExchangeEmailAppPolicy
+        [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
+        $output = Get-AppSecret -AppName $AppSettings.AppName -AppRegistration $appRegistration `
+            -CertThumbprint $CertDetails.CertThumbprint -Context $AppSettings.Context -User $AppSettings.User `
+            -MailEnabledSendingGroup $MailEnabledSendingGroup -DefaultDomain $MailEnabledSendingGroup.Split('@')[1]
+        return $output
+    }
+    catch {
+        $line = $_.InvocationInfo.Line
+        $lineNum = $_.InvocationInfo.ScriptLineNumber
+        throw [System.Management.Automation.RuntimeException]::new("Error in $($MyInvocation.MyCommand.Name) at line $lineNum`:`n'$line' - $($_.Exception.Message)", $_.Exception)
+    }
+
 }

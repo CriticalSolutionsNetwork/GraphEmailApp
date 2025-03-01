@@ -1,13 +1,13 @@
 function New-MailEnabledSendingGroup {
     [CmdletBinding(DefaultParameterSetName = 'CustomDomain')]
     param (
-        [Parameter(Mandatory = $true, HelpMessage = "Specifies the name of the mail enabled sending group.")]
+        [Parameter(Mandatory = $true, HelpMessage = 'Specifies the name of the mail enabled sending group.')]
         [string]$Name,
-        [Parameter(Mandatory = $false, HelpMessage = "Optional alias for the group. If not provided, the group name will be used.")]
+        [Parameter(Mandatory = $false, HelpMessage = 'Optional alias for the group. If not provided, the group name will be used.')]
         [string]$Alias,
-        [Parameter(Mandatory = $true, ParameterSetName = 'CustomDomain', HelpMessage = "Specifies the primary SMTP address for the group when using a custom domain.")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'CustomDomain', HelpMessage = 'Specifies the primary SMTP address for the group when using a custom domain.')]
         [string]$PrimarySmtpAddress,
-        [Parameter(Mandatory = $true, ParameterSetName = 'DefaultDomain', HelpMessage = "Specifies the default domain to construct the primary SMTP address (alias@DefaultDomain) for the group.")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'DefaultDomain', HelpMessage = 'Specifies the default domain to construct the primary SMTP address (alias@DefaultDomain) for the group.')]
         [string]$DefaultDomain
     )
     # Begin Logging
@@ -18,7 +18,7 @@ function New-MailEnabledSendingGroup {
         Write-AuditLog -BeginFunction
     }
     try {
-        Connect-ExchangeOnline
+        Connect-ToMsService -ExchangeOnline
         if (-not $Alias) {
             $Alias = $Name
         }
@@ -36,7 +36,7 @@ function New-MailEnabledSendingGroup {
             Name               = $Name
             Alias              = $Alias
             PrimarySmtpAddress = $PrimarySmtpAddress
-            Type               = "security"
+            Type               = 'security'
         }
         Write-AuditLog -Message "Creating distribution group with parameters: $($groupParams | Out-String)"
         $group = New-DistributionGroup @groupParams
@@ -45,7 +45,9 @@ function New-MailEnabledSendingGroup {
     }
     catch {
         Write-AuditLog -Severity Error -Message $_.Exception.Message
-        throw $_.Exception
+        $line = $_.InvocationInfo.Line
+        $lineNum = $_.InvocationInfo.ScriptLineNumber
+        throw [System.Management.Automation.RuntimeException]::new("Error in $($MyInvocation.MyCommand.Name) at line $lineNum`:`n'$line' - $($_.Exception.Message)", $_.Exception)
     }
     finally {
         Write-AuditLog -EndFunction
