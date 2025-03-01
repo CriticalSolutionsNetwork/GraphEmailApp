@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed approved verb for main public function.
+- Some Error handling improvements.
 
 ## [0.1.0] - 2023-07-15
 
