@@ -36,53 +36,69 @@ function Publish-GraphEmailApp {
         [Parameter(Mandatory = $true, HelpMessage = 'The Mail Enabled Sending Group.')]
         [string]$MailEnabledSendingGroup
     )
-    $PublicMods = `
-        'Microsoft.Graph', 'ExchangeOnlineManagement', `
-        'Microsoft.PowerShell.SecretManagement', 'SecretManagement.JustinGrote.CredMan'
-    $PublicVers = `
-        '1.22.0', '3.1.0', `
-        '1.1.2', '1.0.0'
-    $ImportMods = `
-        'Microsoft.Graph.Authentication', `
-        'Microsoft.Graph.Applications', `
-        'Microsoft.Graph.Identity.SignIns', `
-        'Microsoft.Graph.Users'
-    $params1 = @{
-        PublicModuleNames      = $PublicMods
-        PublicRequiredVersions = $PublicVers
-        ImportModuleNames      = $ImportMods
-        Scope                  = 'CurrentUser'
+    begin {
+        if (-not $script:LogString) {
+            Write-AuditLog -Start
+        }
+        else {
+            Write-AuditLog -BeginFunction
+        }
+        try {
+            Write-AuditLog '###############################################'
+            $PublicMods = 'Microsoft.Graph', 'ExchangeOnlineManagement', 'Microsoft.PowerShell.SecretManagement', 'SecretManagement.JustinGrote.CredMan'
+            $PublicVers = '1.22.0', '3.1.0', '1.1.2', '1.0.0'
+            $ImportMods = 'Microsoft.Graph.Authentication', 'Microsoft.Graph.Applications', 'Microsoft.Graph.Identity.SignIns', 'Microsoft.Graph.Users'
+            $ModParams = @{
+                PublicModuleNames      = $PublicMods
+                PublicRequiredVersions = $PublicVers
+                ImportModuleNames      = $ImportMods
+                Scope                  = 'CurrentUser'
+            }
+            Initialize-ModuleEnv @ModParams
+            Connect-ToMsService -MgGraph -ExchangeOnline
+            $AppSettings = New-GraphEmailAppContext -Prefix "$AppPrefix" -UserId "$AuthorizedSenderUserName"
+            $CertDetails = Initialize-Certificate `
+                -AppName $AppSettings.AppName `
+                -Thumbprint $CertThumbprint `
+                -Subject "CN=$($AppSettings.AppName)"
+        }
+        catch {
+            $line = $_.InvocationInfo.Line
+            $lineNum = $_.InvocationInfo.ScriptLineNumber
+            throw [System.Management.Automation.RuntimeException]::new(
+                "Error in $($MyInvocation.MyCommand.Name) at line $lineNum`:`n'$line' - $($_.Exception.Message)",
+                $_.Exception
+            )
+        }
     }
-    if (!($script:LogString)) {
-        Write-AuditLog -Start
+    process {
+        try {
+            # Register App
+            $appRegistration = New-EnterpriseAppRegistration `
+                -DisplayName $AppSettings.AppName `
+                -CertThumbprint $CertDetails.CertThumbprint `
+                -ResourceAppId $AppSettings.GraphResourceId `
+                -PermissionIds $AppSettings.ResId -SignInAudience 'AzureADMyOrg'
+            # Set App Config
+            Set-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
+            Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
+            [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
+            # Set App Secret
+            $output = Set-AppSecret -AppName $AppSettings.AppName -AppRegistration $appRegistration `
+                -CertThumbprint $CertDetails.CertThumbprint -Context $AppSettings.Context -User $AppSettings.User `
+                -MailEnabledSendingGroup $MailEnabledSendingGroup -DefaultDomain $MailEnabledSendingGroup.Split('@')[1]
+        }
+        catch {
+            $line = $_.InvocationInfo.Line
+            $lineNum = $_.InvocationInfo.ScriptLineNumber
+            throw [System.Management.Automation.RuntimeException]::new(
+                "Error in $($MyInvocation.MyCommand.Name) at line $lineNum`:`n'$line' - $($_.Exception.Message)",
+                $_.Exception
+            )
+        }
     }
-    else {
-        Write-AuditLog -BeginFunction
-    }
-    try {
-        Write-AuditLog '###############################################'
-        Initialize-ModuleEnv @params1
-        Connect-ToMsService -MgGraph -ExchangeOnline
-        $AppSettings = New-GraphEmailAppContext -Prefix "$AppPrefix" -UserId "$AuthorizedSenderUserName"
-        $CertDetails = Initialize-GraphEmailAppCert -AppName $AppSettings.AppName -CertThumbprint $CertThumbprint
-        $appRegistration = New-EnterpriseAppRegistration `
-            -DisplayName $AppSettings.AppName `
-            -CertThumbprint $CertDetails.CertThumbprint `
-            -ResourceAppId $AppSettings.GraphResourceId `
-            -PermissionIds $AppSettings.ResId -SignInAudience 'AzureADMyOrg' # e.g. 'Mail.Send'
-        # $appRegistration = Register-GraphApp -AppName $AppSettings.AppName -GraphResourceId $AppSettings.graphResourceId -ResID $AppSettings.ResId -CertThumbprint $CertDetails.CertThumbprint
-        Set-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
-        Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
-        # Call to New-ExchangeEmailAppPolicy
-        [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
-        $output = Set-AppSecret -AppName $AppSettings.AppName -AppRegistration $appRegistration `
-            -CertThumbprint $CertDetails.CertThumbprint -Context $AppSettings.Context -User $AppSettings.User `
-            -MailEnabledSendingGroup $MailEnabledSendingGroup -DefaultDomain $MailEnabledSendingGroup.Split('@')[1]
+    end {
+        # Return output
         return $output
-    }
-    catch {
-        $line = $_.InvocationInfo.Line
-        $lineNum = $_.InvocationInfo.ScriptLineNumber
-        throw [System.Management.Automation.RuntimeException]::new("Error in $($MyInvocation.MyCommand.Name) at line $lineNum`:`n'$line' - $($_.Exception.Message)", $_.Exception)
     }
 }
