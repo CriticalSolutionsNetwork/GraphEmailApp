@@ -112,13 +112,23 @@ function Write-AuditLog {
         $ErrorActionPreference = 'SilentlyContinue'
         # Define variables to hold information about the command that was invoked.
         $ModuleName = $Script:MyInvocation.MyCommand.Name -replace '\..*'
-        $FuncName = (Get-PSCallStack)[1].Command
+        $callStack = Get-PSCallStack
+        if ($callStack.Count -gt 1) {
+            $FuncName = $callStack[1].Command
+        }
+        else {
+            $FuncName = 'DirectCall'  # Or any other default name you prefer
+        }
+        #Write-Verbose "Funcname Name is $FuncName!" -Verbose
         $ModuleVer = $MyInvocation.MyCommand.Version.ToString()
         # Set the error action preference to continue.
         $ErrorActionPreference = 'Continue'
     }
     process {
         try {
+            if (-not $Start -and -not (Test-Path variable:script:LogString)) {
+                throw "The logging variable is not initialized. Please call Write-AuditLog with the -Start switch or ensure $script:LogString is set."
+            }
             $Function = $($FuncName + '.v' + $ModuleVer)
             if ($Start) {
                 $script:LogString = @()
@@ -171,24 +181,24 @@ function Write-AuditLog {
                     Write-Warning ('[WARNING] ! ' + $Message)
                     $UserInput = Read-Host 'Warning encountered! Do you want to continue? (Y/N)'
                     if ($UserInput -eq 'N') {
-                        Write-Output 'Script execution stopped by user!'
-                        exit
+                        throw 'Script execution stopped by user.'
                     }
                 }
                 'Error' { Write-Error ('[ERROR] X - ' + $FuncName + ' ' + $Message) -ErrorAction Continue }
                 'Verbose' { Write-Verbose ('[VERBOSE] ~ ' + $Message) }
-                Default { Write-Information ('[INFORMATION] * ' + $Message) -InformationAction Continue }
+                Default { Write-Information ('[INFO] * ' + $Message) -InformationAction Continue }
             }
         }
         catch {
-            throw "Write-AuditLog encountered an error (process block): $($_.Exception.Message)"
+            throw "Write-AuditLog encountered an error (process block): $($_)"
         }
+
     }
     end {
         try {
             if ($End) {
                 if (-not [string]::IsNullOrEmpty($OutputPath)) {
-                    $script:LogString | Export-Csv -Path $OutputPath -NoTypeInformation -Encoding utf8
+                    $script:LogString | Export-Csv -Path $OutputPath -NoTypeInformation
                     Write-Verbose "LogPath: $(Split-Path -Path $OutputPath -Parent)"
                 }
                 else {
