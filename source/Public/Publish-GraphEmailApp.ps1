@@ -34,7 +34,9 @@ function Publish-GraphEmailApp {
         [Parameter(Mandatory = $true, HelpMessage = 'The username of the authorized sender.')]
         [string]$AuthorizedSenderUserName,
         [Parameter(Mandatory = $true, HelpMessage = 'The Mail Enabled Sending Group.')]
-        [string]$MailEnabledSendingGroup
+        [string]$MailEnabledSendingGroup,
+        [Parameter(Mandatory = $false, HelpMessage = 'Return the parameter splat for use in other functions.')]
+        [switch]$DoNotReturnParamSplat
     )
     begin {
         if (-not $script:LogString) {
@@ -80,13 +82,28 @@ function Publish-GraphEmailApp {
                 -ResourceAppId $AppSettings.GraphResourceId `
                 -PermissionIds $AppSettings.ResId -SignInAudience 'AzureADMyOrg'
             # Set App Config
-            Set-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
+            Set-GraphEmailAppConfig `
+                -AppRegistration $appRegistration `
+                -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id `
+                -Context $AppSettings.Context `
+                -CertThumbprint $CertDetails.CertThumbprint
             Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
             [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
             # Set App Secret
-            $output = Set-AppSecret -AppName $AppSettings.AppName -AppRegistration $appRegistration `
-                -CertThumbprint $CertDetails.CertThumbprint -Context $AppSettings.Context -User $AppSettings.User `
-                -MailEnabledSendingGroup $MailEnabledSendingGroup -DefaultDomain $MailEnabledSendingGroup.Split('@')[1]
+            $output = [PSCustomObject]@{
+                AppId                  = $appRegistration.AppId
+                AppName                = "CN=$($AppSettings.AppName)"
+                AppRestrictedSendGroup = $MailEnabledSendingGroup
+                CertExpires            = ($CertDetails.CertExpires)
+                CertThumbprint         = $CertDetails.CertThumbprint
+                DefaultDomain          = $MailEnabledSendingGroup.Split('@')[1]
+                SendAsUser             = ($AppSettings.User.UserPrincipalName.Split('@')[0])
+                SendAsUserEmail        = $AppSettings.User.UserPrincipalName
+                TenantID               = $AppSettings.Context.TenantId
+            }
+            # Store it as JSON in the vault
+            $name = Set-JsonSecret -Name "CN=$($AppSettings.AppName)" -InputObject $output -VaultName 'GraphEmailAppLocalStore' -Overwrite
+            Write-AuditLog "Secret '$name' saved to vault 'GraphEmailAppLocalStore'."
         }
         catch {
             $line = $_.InvocationInfo.Line
@@ -99,6 +116,11 @@ function Publish-GraphEmailApp {
     }
     end {
         # Return output
-        return $output
+        if ($DoNotReturnParamSplat) {
+            return $output
+        }
+        else {
+            Write-Output ($output | ConvertTo-ParameterSplat)
+        }
     }
 }
