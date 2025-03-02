@@ -1,5 +1,6 @@
 function ConvertTo-ParameterSplat {
     [CmdletBinding()]
+    [OutputType([string])]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [PSObject]$InputObject
