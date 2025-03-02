@@ -65,7 +65,12 @@ function Publish-GraphEmailApp {
         Connect-ToMsService -MgGraph -ExchangeOnline
         $AppSettings = New-GraphEmailAppContext -Prefix "$AppPrefix" -UserId "$AuthorizedSenderUserName"
         $CertDetails = Initialize-GraphEmailAppCert -AppName $AppSettings.AppName -CertThumbprint $CertThumbprint
-        $appRegistration = Register-GraphApp -AppName $AppSettings.AppName -GraphResourceId $AppSettings.graphResourceId -ResID $AppSettings.ResId -CertThumbprint $CertDetails.CertThumbprint
+        $appRegistration = New-EnterpriseAppRegistration `
+            -DisplayName $AppSettings.AppName `
+            -CertThumbprint $CertDetails.CertThumbprint `
+            -ResourceAppId $AppSettings.GraphResourceId `
+            -PermissionIds $AppSettings.ResId -SignInAudience 'AzureADMyOrg' # e.g. 'Mail.Send'
+        # $appRegistration = Register-GraphApp -AppName $AppSettings.AppName -GraphResourceId $AppSettings.graphResourceId -ResID $AppSettings.ResId -CertThumbprint $CertDetails.CertThumbprint
         Set-GraphEmailAppConfig -AppRegistration $appRegistration -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id -Context $AppSettings.Context -CertThumbprint $CertDetails.CertThumbprint
         Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
         # Call to New-ExchangeEmailAppPolicy
@@ -80,5 +85,4 @@ function Publish-GraphEmailApp {
         $lineNum = $_.InvocationInfo.ScriptLineNumber
         throw [System.Management.Automation.RuntimeException]::new("Error in $($MyInvocation.MyCommand.Name) at line $lineNum`:`n'$line' - $($_.Exception.Message)", $_.Exception)
     }
-
 }
