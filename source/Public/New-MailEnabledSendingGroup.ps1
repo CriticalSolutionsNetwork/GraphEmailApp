@@ -38,7 +38,7 @@ function New-MailEnabledSendingGroup {
             PrimarySmtpAddress = $PrimarySmtpAddress
             Type               = 'security'
         }
-        Write-AuditLog -Message "Creating distribution group with parameters: $($groupParams | Out-String)"
+        Write-AuditLog -Message "Creating distribution group with parameters: `n$($groupParams | Out-String)"
         $group = New-DistributionGroup @groupParams
         Write-AuditLog -Message "Distribution group created: $($group | Out-String)"
         return $group

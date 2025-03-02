@@ -59,7 +59,7 @@ function Set-GraphEmailAppConfig {
             # Generate graph command that can be used to connect later that can be copied and saved.
             $connectGraph = 'Connect-MgGraph -ClientId "' + $AppRegistration.AppId + '" -TenantId "'`
                 + $Context.TenantId + '" -CertificateName "' + $Cert.SubjectName.Name + '"'
-            Write-Host $connectGraph -ForegroundColor DarkGreen
+            Write-Host "`n$connectGraph`n" -ForegroundColor DarkGreen
         }
         catch {
             $line = $_.InvocationInfo.Line

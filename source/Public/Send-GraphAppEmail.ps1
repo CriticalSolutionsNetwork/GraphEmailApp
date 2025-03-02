@@ -75,20 +75,7 @@ function Send-GraphAppEmail {
                 # Step 7:
                 # Define the application Name and Encrypted File Paths.
                 $Auth = Get-Secret -Name "$AppName" -Vault GraphEmailAppLocalStore -AsPlainText -ErrorAction Stop
-                $delimiter = '|'
-                $values = $Auth.Split($delimiter)
-                # Create a new PSCustomObject using the values in the alphabetized order.
-                $authObj = [PSCustomObject]@{
-                    AppId                  = $values[0]
-                    AppName                = $values[1]
-                    AppRestrictedSendGroup = $values[2]
-                    CertExpires            = $values[3]
-                    CertThumbprint         = $values[4]
-                    DefaultDomain          = $values[5]
-                    SendAsUser             = $values[6]
-                    SendAsUserEmail        = $values[7]
-                    TenantID               = $values[8]
-                }
+                $authObj = $Auth | ConvertFrom-Json
                 $GraphEmailApp = $authObj
             }
             catch {

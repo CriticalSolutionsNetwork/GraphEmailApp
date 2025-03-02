@@ -1,4 +1,4 @@
-function Initialize-GraphEmailApp {
+function New-GraphEmailAppContext {
     [OutputType([pscustomobject])]
     [CmdletBinding()]
     param (

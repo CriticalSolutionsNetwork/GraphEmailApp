@@ -14,7 +14,7 @@ Deploys Microsoft Graph Email app with app-only authentication.
 - **Requirements**: Internet connectivity, mail-enabled security group in Exchange Online.
 - **Outputs**: Custom object with AppId, CertThumbprint, TenantID, CertExpires.
 
-## Get-GraphEmailAppCert
+## Initialize-GraphEmailAppCert
 Retrieves or creates a new certificate.
 - **Parameters**: CertThumbprint (optional), AppName.
 - **Permissions**: Certificate store access.

@@ -1,4 +1,4 @@
-function Get-AppSecret {
+function Set-AppSecret {
     [CmdletBinding()]
     param (
         [Parameter(
@@ -61,6 +61,7 @@ function Get-AppSecret {
                 throw $_.Exception
             }
         }
+
         $output = [PSCustomObject]@{
             AppId                  = $AppRegistration.AppId
             AppName                = "CN=$AppName"
@@ -72,9 +73,8 @@ function Get-AppSecret {
             SendAsUserEmail        = $User.UserPrincipalName
             TenantID               = $Context.TenantId
         }
-        $delimiter = '|'
-        $joinedString = ($output.PSObject.Properties.Value) -join $delimiter
-        Set-Secret -Name "CN=$AppName" -Secret $joinedString -Vault GraphEmailAppLocalStore -ErrorAction Stop
+        $SecretJson = $output | ConvertTo-Json -Compress
+        Set-Secret -Name "CN=$AppName" -Secret $SecretJson -Vault GraphEmailAppLocalStore -ErrorAction Stop
         Write-AuditLog -Message "Returning output. Save the AppName $("CN=$AppName"). The AppName will be needed to retrieve the secret containing authentication info."
         Write-Host 'You can use the following values as input into the email function!' -ForegroundColor Green
         Write-AuditLog -EndFunction
