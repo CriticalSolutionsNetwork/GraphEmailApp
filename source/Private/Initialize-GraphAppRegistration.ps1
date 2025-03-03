@@ -65,25 +65,24 @@ function Initialize-GraphAppRegistration {
                 Write-AuditLog "Client service principal not found for $($AppRegistration.AppId)." -Severity Error
                 throw "Unable to find client service principal."
             }
-            # 4. Grant each scope in $Scopes
-            foreach ($scope in $Scopes) {
-                Write-AuditLog "Granting '$scope' to Service Principal $($ClientSp.DisplayName)."
-                $Params = @{
-                    'ClientId'    = $ClientSp.Id
-                    'ConsentType' = 'AllPrincipals'
-                    'ResourceId'  = $GraphServicePrincipalId
-                    'Scope'       = $scope
-                }
-                [void](New-MgOauth2PermissionGrant -BodyParameter $Params -Confirm:$false)
+            # 4. Combine all scopes into a single space-delimited string
+            $combinedScopes = $Scopes -join ' '
+            Write-AuditLog "Granting the following scope(s) to Service Principal $($ClientSp.DisplayName): $combinedScopes"
+            $Params = @{
+                ClientId    = $ClientSp.Id
+                ConsentType = 'AllPrincipals'
+                ResourceId  = $GraphServicePrincipalId
+                Scope       = $combinedScopes
             }
+            [void](New-MgOauth2PermissionGrant -BodyParameter $Params -Confirm:$false)
             # 5. Build the admin consent URL
             $adminConsentUrl = 'https://login.microsoftonline.com/' + $Context.TenantId + '/adminconsent?client_id=' + $AppRegistration.AppId
             Write-Verbose 'Please go to the following URL in your browser to provide admin consent:' -Verbose
             Write-Host $adminConsentUrl -ForegroundColor DarkGray
             Write-Verbose 'After providing admin consent, you can use the following command for certificate-based auth:' -Verbose
             if ($AuthMethod -eq 'Certificate') {
-                $connectGraph = 'Connect-MgGraph -ClientId "' + $AppRegistration.AppId + '" -TenantId "'`
-                    + $Context.TenantId + '" -CertificateName "' + $Cert.SubjectName.Name + '"'
+                $connectGraph = 'Connect-MgGraph -ClientId "' + $AppRegistration.AppId + '" -TenantId "' +
+                                $Context.TenantId + '" -CertificateName "' + $Cert.SubjectName.Name + '"'
                 Write-Host "`n$connectGraph`n" -ForegroundColor DarkGreen
             }
             else {

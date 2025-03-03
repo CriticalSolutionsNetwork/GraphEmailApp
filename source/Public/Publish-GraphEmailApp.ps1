@@ -26,20 +26,46 @@
 function Publish-GraphEmailApp {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, HelpMessage = 'The prefix used to initialize the Graph Email App. 2-4 characters letters and numbers only.')]
+        [Parameter(
+            Mandatory = $true,
+            HelpMessage = 'The prefix used to initialize the Graph Email App. 2-4 characters letters and numbers only.'
+        )]
         [ValidatePattern('^[A-Z0-9]{2,4}$')]
-        [string]$AppPrefix,
-        [Parameter(Mandatory = $false, HelpMessage = 'The thumbprint of the certificate to be retrieved.')]
+        [string]
+        $AppPrefix,
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = 'The thumbprint of the certificate to be retrieved.'
+        )]
         [ValidatePattern('^[A-Fa-f0-9]{40}$')]
-        [string]$CertThumbprint,
-        [Parameter(Mandatory = $true, HelpMessage = 'The username of the authorized sender.')]
+        [string]
+        $CertThumbprint,
+        [Parameter(
+            Mandatory = $true,
+            HelpMessage = 'The username of the authorized sender.'
+        )]
         [ValidatePattern('^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')]
-        [string]$AuthorizedSenderUserName,
-        [Parameter(Mandatory = $true, HelpMessage = 'The Mail Enabled Sending Group.')]
+        [string]
+        $AuthorizedSenderUserName,
+        [Parameter(
+            Mandatory = $true,
+            HelpMessage = 'The Mail Enabled Sending Group.'
+        )]
         [ValidatePattern('^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')]
-        [string]$MailEnabledSendingGroup,
-        [Parameter(Mandatory = $false, HelpMessage = 'Return the parameter splat for use in other functions.')]
-        [switch]$DoNotReturnParamSplat
+        [string]
+        $MailEnabledSendingGroup,
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = 'If specified, use a custom vault name. Otherwise, use the default.'
+        )]
+        [string]
+        $VaultName = 'GraphEmailAppLocalStore',
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = 'Return the parameter splat for use in other functions.'
+        )]
+        [switch]
+        $DoNotReturnParamSplat
     )
     begin {
         if (-not $script:LogString) {
@@ -118,8 +144,8 @@ function Publish-GraphEmailApp {
                 TenantID               = $AppSettings.Context.TenantId
             }
             # Store it as JSON in the vault
-            $name = Set-JsonSecret -Name "CN=$($AppSettings.AppName)" -InputObject $output -VaultName 'GraphEmailAppLocalStore' -Overwrite
-            Write-AuditLog "Secret '$name' saved to vault 'GraphEmailAppLocalStore'."
+            $name = Set-JsonSecret -Name "CN=$($AppSettings.AppName)" -InputObject $output -VaultName $VaultName -Overwrite
+            Write-AuditLog "Secret '$name' saved to vault '$VaultName'."
         }
         catch {
             $line = $_.InvocationInfo.Line
