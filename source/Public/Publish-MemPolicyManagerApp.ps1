@@ -18,7 +18,7 @@ function Publish-MemPolicyManagerApp {
             HelpMessage = 'If specified, use a custom vault name. Otherwise, use the default.'
         )]
         # TODO Change default vault name to 'MemPolicyManagerLocalStore'
-        [string]$VaultName = 'GraphEmailAppLocalStore',
+        [string]$VaultName = 'MemPolicyManagerLocalStore',
         [Parameter(
             Mandatory = $false,
             HelpMessage = 'If specified, overwrite the vault secret if it already exists.'
