@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Some Error handling improvements.
 - Function names are now more consistent with approved verbs.
 - Refactored code to improve readability.
+- Consolidated functions to reduce complexity.
 
 ## [0.1.0] - 2023-07-15
 
