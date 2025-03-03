@@ -30,10 +30,13 @@ function Publish-GraphEmailApp {
         [ValidatePattern('^[A-Z0-9]{2,4}$')]
         [string]$AppPrefix,
         [Parameter(Mandatory = $false, HelpMessage = 'The thumbprint of the certificate to be retrieved.')]
+        [ValidatePattern('^[A-Fa-f0-9]{40}$')]
         [string]$CertThumbprint,
         [Parameter(Mandatory = $true, HelpMessage = 'The username of the authorized sender.')]
+        [ValidatePattern('^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')]
         [string]$AuthorizedSenderUserName,
         [Parameter(Mandatory = $true, HelpMessage = 'The Mail Enabled Sending Group.')]
+        [ValidatePattern('^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')]
         [string]$MailEnabledSendingGroup,
         [Parameter(Mandatory = $false, HelpMessage = 'Return the parameter splat for use in other functions.')]
         [switch]$DoNotReturnParamSplat
@@ -58,7 +61,17 @@ function Publish-GraphEmailApp {
             }
             Initialize-ModuleEnv @ModParams
             Connect-ToMsService -MgGraph -ExchangeOnline
-            $AppSettings = New-GraphEmailAppContext -Prefix "$AppPrefix" -UserId "$AuthorizedSenderUserName"
+            # Verify if user exists and store object
+            $user = Get-MgUser -Filter "Mail eq '$AuthorizedSenderUserName'"
+            if (-not $user) {
+                throw "User '$AuthorizedSenderUserName' not found in the tenant."
+            }
+            $AppSettings = New-MgGraphContextObject -Permissions 'Mail.Send'
+            $appName = New-GraphAppName -Prefix $AppPrefix `
+                -ScenarioName 'AuditGraphEmail' `
+                -UserId $AuthorizedSenderUserName
+            $AppSettings | Add-Member -NotePropertyName 'User' -NotePropertyValue $user
+            $AppSettings | Add-Member -NotePropertyName 'AppName' -NotePropertyValue $appName
             $CertDetails = Initialize-Certificate `
                 -AppName $AppSettings.AppName `
                 -Thumbprint $CertThumbprint `
@@ -82,12 +95,15 @@ function Publish-GraphEmailApp {
                 -ResourceAppId $AppSettings.GraphResourceId `
                 -PermissionIds $AppSettings.ResId -SignInAudience 'AzureADMyOrg'
             # Set App Config
-            Set-GraphEmailAppConfig `
+            Initialize-GraphAppRegistration `
                 -AppRegistration $appRegistration `
                 -GraphServicePrincipalId $AppSettings.GraphServicePrincipal.Id `
                 -Context $AppSettings.Context `
-                -CertThumbprint $CertDetails.CertThumbprint
+                -AuthMethod 'Certificate' `
+                -CertThumbprint $CertDetails.CertThumbprint `
+                -Scopes 'Mail.Send'
             Read-Host 'Provide admin consent now, or copy the url and provide admin consent later. Press Enter to continue.'
+            # Exchange Online App Policy
             [void](New-ExchangeEmailAppPolicy -AppRegistration $appRegistration -MailEnabledSendingGroup $MailEnabledSendingGroup)
             # Set App Secret
             $output = [PSCustomObject]@{
