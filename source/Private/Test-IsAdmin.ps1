@@ -16,7 +16,6 @@ function Test-IsAdmin {
     PS C:\> Test-IsAdmin
     True
     #>
-
     # Create a new WindowsPrincipal object for the current user and check if it is in the Administrator role
     (New-Object Security.Principal.WindowsPrincipal ([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }

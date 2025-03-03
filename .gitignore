@@ -17,3 +17,6 @@ node_modules
 package-lock.json
 func.ps1
 GetMGApplicationCertificateAndSecretExpiration.ps1
+test1.ps1
+testitem.txt
+testitem.zip
